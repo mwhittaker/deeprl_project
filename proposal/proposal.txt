@@ -1,0 +1,38 @@
+Model-free on PSR (A):
+1. Get samples from policy
+2. Train autoencoder (e, d) and dynamics f jointly minimizing |e(d(s)) - s| + alpha * |f(e(s), a) - e(s')|
+   - I considered just |d(f(e(s), a)) - s'|, but this seems like it'd be too noisy for training f
+   - (Robert's suggestion): Ladder networks are appropriate for the joint objective above.
+3. Model-free: train a policy pi on e-encoded states w/ PG
+4. (goto 1)
+
+f can accept encodings for previous states / be an RNN
+
+Core ideas:
+  predictive state representation is easier to learn from (like Pong input image diffs, but automatically learned)
+  can have global, smooth, nonlinear dynamics (since we're on-policy)
+
+Novelty: The particular loss for the autoencoder suggested above, might be useful
+
+Variants to genuinely consider:
+  Jointly optimize steps 2/3 under the same loss
+  Use a shooter method / BPTT for model-based learning on the policy
+
+Basic Plan:
+  1. Get easy-pong (state [pong ball location etc] is directly visible), show that's easier to learn from. -> Richard already implemented this, can get impl from him.
+  2. Show encoding is learnable: hard-code dynamics f (assuming encoding is location/velocity/etc), learn e/d, then show learning is easier on e-encoded states
+  3. Show encoding/dynamics are jointly learnable (f not hardcoded) -- i.e., algorithm (A) on pong
+  4. Try on harder problem, try variants.
+  5. (Probably reach goals): show comparison/outperforming of tasks below.
+
+Existing work:
+
+E1. http://www.jenskober.de/MunkCDC2016.pdf - encodes states with loss |f(e(s)) - e(s')| (and also predicts rewards as well), uses encoding for model-free methods - doesn't work well - perhaps because it allows degenerate solution f(_) = e(_) = 1?
+
+E2. https://arxiv.org/pdf/1506.07365.pdf - use locally linear dynamics on the latent space optimized jointly with encoding, decoding. Then solve stochastic optimal control problem in latent space with iLQR to get action plan. Pretty good use of learned model; only problem I can think of is to find an environment where there are no locally linear dynamics (?). But it seems that under a suitable re-parameterization you can get local linearity (i.e., I can't think of an example).
+
+E3. https://arxiv.org/pdf/1612.07307.pdf - considers predicting rewards, dynamics, and which action was taken for a pair of states both in a pre-training setting and by jointly optimizing with auxiliary losses. Both are pretty effective. Main difference between their pretraining and algorithm (A) is that they don't have a step 4 so pre-training only helps at the beginning of the optimization. You can say that the auxiliary loss formulation in this paper is the same as algorithm (A), but with weight sharing between e, f, and pi, and steps 2&3 are done at the same time. The other important difference is the way they predict dynamics -- it's different than (A).
+
+E4. https://arxiv.org/pdf/1709.08520.pdf - let f be an RNN, use it to predict statistics about future observations i.e., basically |d(f(e(s), a)) - s'|. This might have the problem I mentioned above in (A). They get okayish improvements across the board.
+
+So it seems that for (A) to be distinguished from existing work, I'd have to show it beats out E1/E2/E4 in the places I mentioned (which I think it can). I honestly don't know what I can say about E3, besides using a different dynamics model it's pretty similar. Maybe step (3) can be a model-based: if f has non-linear but backprop-friendly dynamics (i.e., it's an LSTM), then the policy from (3) can be the result of optimizing a "shooting method"; a big BPTT maximizing reward over the trajectory as planned by f.
