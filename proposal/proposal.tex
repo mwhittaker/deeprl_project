@@ -1,27 +1,62 @@
 \documentclass{report}
 \title{Deep RL Project Proposal}
-\author{Vlad Feinberg, Samnvit Jain, Michael Whittaker}
+\author{Vlad Feinberg, Samvit Jain, Michael Whittaker}
 \date{October 9, 2017}
+
+\usepackage{pervasives}
 
 \begin{document}
 \maketitle{}
 
-The proposal should be a maximum of one page, and should describe the idea that
-you plan to explore for your final and project and the members of your group.
-One proposal should be submitted per group. Your proposal should at minimum
-answer the following questions:
+\section*{Overview}
+Consider trying to build a policy to play the Atari game Pong by training it
+with raw images of the game (like we did in homework 3). The raw images are
+very high-dimensional and contain a lot of superfluous information. The only
+``pertinent information'' in the images is the position and velocity of the
+ball and the position of the paddles. If we instead trained a model exclusively
+on this pertinent information (instead of the raw images), the model would
+likely train much faster. In this project, we plan on exploring the hypothesis
+that (a) we can automatically infer this pertinent information in the context of
+model-based reinforcement learning by learning an encoding from the observation
+space to a smaller space that is more amenable to learning and (b) policies
+trained on the encoded space converge to a good policy faster than when trained
+on the unencoded space.
+
+\section*{Game Plan}
+More concretely, our project will explore algorithms like the following which
+jointly learn an encoding of the observation space and the dynamics.
 \begin{enumerate}
   \item
-    Which tasks or problems will you study? Where will you get your data or
-    simulator (or real-world system)?
+    Generate a set of $N$ samples $\set{(s_i, a_i, s_i')}$ from policy $\pi$.
   \item
-    What is the main research hypothesis your project will be investigate? All
-    projects should at least attempt to evaluate novel ideas that pertain to
-    deep RL or its applications.
+    Train an autoencoder $(e, d)$ and dynamics $f$ jointly minimizing
+    $\sum_{i=1}^N \norm{e(d(s_i)) - s_i}_2 + \alpha \norm{f(e(s_i), a_i) -
+    e(s_i')}_2$.
   \item
-    How does the topic of your project relate to deep RL?
+    Train a policy $\pi$ on $e$-encoded states using some reinforcement
+    learning algorithm
+  \item
+    Goto 1.
 \end{enumerate}
+We plan on approaching the problem incrementally in the following way:
+\begin{itemize}
+  \item
+    Train a model on a Pong simulator which directly exposes the position and
+    velocity of the ball and the position of the paddles. Verify that it is
+    significantly easier to train a good model on this simulator compared to
+    one which only exposes raw images.
+  \item
+    Hard code a dynamics $f$ that is defined in terms of ball and paddle
+    positions and velocities and learn the autoencoder $(e, d)$.
+  \item
+    Jointly learn the autoencoder $(e, d)$ and the dynamics $f$.
+  \item
+    Apply the technique to other problems, besides Pong.
+  \item
+    Compare the performance of our approach to other existing approaches.
+\end{itemize}
 
+\section*{Related Work}
 \cite{munk2016learning}
 \cite{watter2015embed}
 \cite{shelhamer2016loss}
