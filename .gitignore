@@ -10,7 +10,7 @@
 # Session
 Session.vim
 
-# Temporary
+# Temporary (also gets emacs temps)
 .netrwhist
 *~
 # Auto-generated tag files
