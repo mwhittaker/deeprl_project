@@ -1,6 +1,6 @@
 #!/bin/bash
 
-bibtex citations.bib
+bibtex proposal
 pdflatex proposal.tex
 pdflatex proposal.tex
 if [ "$(uname)" == "Darwin" ]; then
