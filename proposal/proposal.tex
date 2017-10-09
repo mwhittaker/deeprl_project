@@ -4,6 +4,7 @@
 \date{October 9, 2017}
 
 \usepackage{pervasives}
+\usepackage{indentfirst}
 
 \begin{document}
 \maketitle{}
@@ -57,10 +58,13 @@ We plan on approaching the problem incrementally in the following way:
 \end{itemize}
 
 \section*{Related Work}
-\cite{munk2016learning}
-\cite{watter2015embed}
-\cite{shelhamer2016loss}
-\cite{venkatraman2017predictive}
+\cite{munk2016learning} In this paper, states are encoded with the following loss: $|f(e(s)) - e(s')|$ (i.e. only the prediction error). With this method, the authors are not able to achieve significant improvements over the baseline performance. We believe this is partially because a loss function that does not include a term that explicitly captures the encoding error allows for degenerate solutions of the form $e(\cdot) = d(\cdot) = 1$. \newline %TODO: do we have enough evidence that this degenerate solution is an actual issue here?
+
+\cite{watter2015embed} In this paper, the authors use locally linear dynamics on the latent space optimized jointly with encoding and decoding. They then solve a stochastic optimal control problem in latent space with iLQR to get an action plan. This is a pretty good use of the learned model; however, we believe that in practice it may be difficult to find environments where there are no locally linear dynamics. \newline %TODO: elaborate on last idea?
+
+\cite{shelhamer2016loss} In this paper, the authors consider predicting rewards, dynamics, and which action was taken for a pair of states both in a pre-training setting and by jointly optimizing with auxiliary losses. Both are pretty effective. The main difference between their pretraining and our proposed algorithm is that they don't have a step 4 so pre-training only helps at the beginning of the optimization. You can say that the auxiliary loss formulation in this paper is the same as our algorithm, but with two key differences: 1) weight sharing between $e$, $f$, and $\pi$, and 2) the concurrent execution of steps 2 and 3. The other important difference is the way they predict dynamics. \newline %TODO: elaborate on last idea?
+
+\cite{venkatraman2017predictive} Letting $f$ be an RNN, the authors use it to predict statistics about future observations, i.e. $|d(f(e(s), a)) - s'|$. Though they achieve modest improvements over the baseline, this may have the same problem as \cite{munk2016learning}, i.e. the lack of a term capturing encoding error may lead to degenerate encodings.
 
 \bibliographystyle{plain}
 \bibliography{citations}
