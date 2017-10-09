@@ -5,52 +5,55 @@
 
 \usepackage{pervasives}
 \usepackage{indentfirst}
+\input{defs}
 
 \begin{document}
 \maketitle{}
 
 \section*{Overview}
-Consider trying to build a policy to play the Atari game Pong by training it
-with raw images of the game (like we did in homework 3). The raw images are
+
+\textbf{Motivating Example}. Consider trying to build a policy to play the Atari
+game Pong by training it
+with raw images of the game. The raw images are
 very high-dimensional and contain a lot of superfluous information. The only
 ``pertinent information'' in the images is the position and velocity of the
-ball and the position of the paddles. If we instead trained a model exclusively
-on this pertinent information (instead of the raw images), the model would
-likely train much faster. In this project, we plan on exploring the hypothesis
-that (a) we can automatically infer this pertinent information in the context of
-model-based reinforcement learning by learning an encoding from the observation
-space to a smaller space that is more amenable to learning and (b) policies
-trained on the encoded space converge to a good policy faster than when trained
-on the unencoded space.
+ball and the position of the paddles. Based only on this information, a Pong
+policy would be pretty simple (move the paddle to the expected location for
+the ball).
+
+\textbf{Hypothesis}.
+We would like to investigate to what extent predictive state representations (PSRs)
+are feasible to attain and useful for the implicit planning done by model-free
+policies, and, if time
+permits, the explicit planning of model-based ones. This requires evaluating
+the hypothesis
+that (a) we can automatically infer PSRs and dynamics and (b) policies
+trained on PSRs converge faster than when trained
+on the unencoded space. We will only consider settings with known reward $r$.
 
 \section*{Game Plan}
-More concretely, our project will explore algorithms like the following which
-jointly learn an encoding of the observation space and the dynamics.
+We will consider algorithms which repeat the following steps:
 \begin{enumerate}
   \item
-    Generate a set of $N$ samples $\set{(s_i, a_i, s_i')}$ from policy $\pi$.
+    Generate on-policy samples $\mcD=\ca{(s, a, s')}$ from policy $\pi$.
   \item
-    Train an autoencoder $(e, d)$ and dynamics $f$ jointly minimizing
-    $\sum_{i=1}^N \norm{e(d(s_i)) - s_i}_2 + \alpha \norm{f(e(s_i), a_i) -
-    e(s_i')}_2$.
+    Train an autoencoder $(e, d)$ and dynamics $f$ by jointly minimizing for some $\alpha$:
+    \begin{align} \label{eq:aeloss}
+      \sum_{(s, a, s')\in\mcD} \norm{d(e(s)) - s} + \alpha \norm{f(e(s), a) -
+    e(s')}
+    \end{align}
   \item
     Train a policy $\pi$ on $e$-encoded states using some reinforcement
     learning algorithm
-  \item
-    Goto 1.
 \end{enumerate}
 We plan on approaching the problem incrementally in the following way:
 \begin{itemize}
   \item
-    Train a model on a Pong simulator which directly exposes the position and
-    velocity of the ball and the position of the paddles. Verify that it is
-    significantly easier to train a good model on this simulator compared to
-    one which only exposes raw images.
+    Hand-code $e,f$ for Pong (directly expose paddle and ball location and speed information). Verify improved DQN or PG performance.
   \item
-    Hard code a dynamics $f$ that is defined in terms of ball and paddle
-    positions and velocities and learn the autoencoder $(e, d)$.
+    As above, but hard-code only $f$ (assuming $e$ extracts the appropriate information), then train $(e,d)$ to actually extract that information for the fixed $f$.
   \item
-    Jointly learn the autoencoder $(e, d)$ and the dynamics $f$.
+    As above, but jointly learn the autoencoder $(e, d)$ and the dynamics $f$.
   \item
     Apply the technique to other problems, besides Pong.
   \item
@@ -58,13 +61,10 @@ We plan on approaching the problem incrementally in the following way:
 \end{itemize}
 
 \section*{Related Work}
-\cite{munk2016learning} In this paper, states are encoded with the following loss: $|f(e(s)) - e(s')|$ (i.e. only the prediction error). With this method, the authors are not able to achieve significant improvements over the baseline performance. We believe this is partially because a loss function that does not include a term that explicitly captures the encoding error allows for degenerate solutions of the form $e(\cdot) = d(\cdot) = 1$. \newline %TODO: do we have enough evidence that this degenerate solution is an actual issue here?
 
-\cite{watter2015embed} In this paper, the authors use locally linear dynamics on the latent space optimized jointly with encoding and decoding. They then solve a stochastic optimal control problem in latent space with iLQR to get an action plan. This is a pretty good use of the learned model; however, we believe that in practice it may be difficult to find environments where there are no locally linear dynamics. \newline %TODO: elaborate on last idea?
+A variety of existing work has already explored similar approaches. We distinguish ourselves mainly by our autoencoder loss. First, the expression of the loss in Eq.~\ref{eq:aeloss} makes it a good fit for ladder networks \cite{rasmus2015semi}. We are unaware of prior work using ladder networks for auxiliary self-supervised objectives in RL. Second, we believe our loss will improve upon the modest improvements in prior PSR-for-RL work because its structure discourages several training degeneracies.
 
-\cite{shelhamer2016loss} In this paper, the authors consider predicting rewards, dynamics, and which action was taken for a pair of states both in a pre-training setting and by jointly optimizing with auxiliary losses. Both are pretty effective. The main difference between their pretraining and our proposed algorithm is that they don't have a step 4 so pre-training only helps at the beginning of the optimization. You can say that the auxiliary loss formulation in this paper is the same as our algorithm, but with two key differences: 1) weight sharing between $e$, $f$, and $\pi$, and 2) the concurrent execution of steps 2 and 3. The other important difference is the way they predict dynamics. \newline %TODO: elaborate on last idea?
-
-\cite{venkatraman2017predictive} Letting $f$ be an RNN, the authors use it to predict statistics about future observations, i.e. $|d(f(e(s), a)) - s'|$. Though they achieve modest improvements over the baseline, this may have the same problem as \cite{munk2016learning}, i.e. the lack of a term capturing encoding error may lead to degenerate encodings.
+In \cite{munk2016learning}, states are encoded with loss $\norm{f(e(s)) - e(s')}$, which permits the minimizer $f(\cdot)=e(\cdot) = d(\cdot) = 1$. In \cite{watter2015embed}, the authors use locally linear dynamics on the latent space optimized jointly with encoding and decoding, and then solve a stochastic optimal control problem in latent space with iLQR to get an action plan. This is a pretty good use of the learned model; however, we believe that in practice it may be difficult to find environments where there are no locally linear dynamics. \cite{venkatraman2017predictive} lets $f$ be an RNN, whose state is used to predict statistics $\varphi$ about future observations, i.e. $\|d(f(e(s), a)) - \varphi(s')\|$. We view our model as simpler and possibly more applicable across tasks, and (via $\alpha$) exposing the tradeoff between encoding reconstruction accuracy and predictive power. Finally, \cite{shelhamer2016loss} is perhaps the most successful in this area, but their dynamics model is based on discriminating corrupted inputs rather than predicting states.
 
 \bibliographystyle{plain}
 \bibliography{citations}
