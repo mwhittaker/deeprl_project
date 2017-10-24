@@ -137,7 +137,7 @@ class _ClippedRewardsWrapper(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         return obs, np.sign(reward), done, info
 
-def wrap_deepmind_ram(env):
+def _wrap_deepmind_ram(env):
     """Applies various Atari-specific wrappers to make learning easier."""
     env = _EpisodicLifeEnv(env)
     env = _NoopResetEnv(env, noop_max=30)
@@ -147,7 +147,7 @@ def wrap_deepmind_ram(env):
     env = _ClippedRewardsWrapper(env)
     return env
 
-def wrap_deepmind(env):
+def _wrap_deepmind(env):
     """Applies various Atari-specific wrappers to make learning easier."""
     assert 'NoFrameskip' in env.spec.id
     env = _EpisodicLifeEnv(env)
@@ -157,4 +157,17 @@ def wrap_deepmind(env):
         env = _FireResetEnv(env)
     env = _ProcessFrame84(env)
     env = _ClippedRewardsWrapper(env)
+    return env
+
+def gen_pong_env(seed):
+    """Generate a pong environment, with all the bells and whistles."""
+    benchmark = gym.benchmark_spec('Atari40M')
+    task = benchmark.tasks[3]
+
+    env_id = task.env_id
+    env = gym.make(env_id)
+    env.seed(seed)
+
+    # Can wrap in gym.wrappers.Monitor here if we want to record.
+    env = _wrap_deepmind(env)
     return env

@@ -6,4 +6,4 @@ install:
   - pip install -r requirements.txt
   - pip install tensorflow
 script:
-  - pylint --disable=locally-disabled,fixme src
+  - PYTHONPATH=src pylint --disable=locally-disabled,fixme src
