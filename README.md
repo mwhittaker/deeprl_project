@@ -6,7 +6,7 @@ Dependencies can be installed with `python setup.py install` (install asssumes G
 
 You can check style with `pylint --disable=locally-disabled,fixme src`.
 
-Our dependencies require Python 3.5.
+Our dependencies require Python 3.5 (and assume appropriate GPU drivers have already been installed).
 
     conda create -y -n gpu-py3.5 python=3.5 anaconda
     source activate gpu-py3.5
