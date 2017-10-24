@@ -1,0 +1,9 @@
+language: python
+python:
+  - "3.5"
+install:
+  - pip install pylint
+  - pip install -r requirements.txt
+  - pip install tensorflow
+script:
+  - pylint --disable=locally-disabled,fixme src

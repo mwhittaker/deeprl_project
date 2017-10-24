@@ -1,0 +1,6 @@
+scipy
+numpy>=1.13
+mujoco_py==0.5.7
+universe
+gym
+opencv-python
