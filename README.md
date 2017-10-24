@@ -5,3 +5,10 @@
 Dependencies can be installed with `python setup.py install` (install asssumes GPU access, modify file if it is unavailable).
 
 You can check style with `pylint --disable=locally-disabled,fixme src`.
+
+Our dependencies require Python 3.5.
+
+    conda create -y -n gpu-py3.5 python=3.5 anaconda
+    source activate gpu-py3.5
+    conda install -y gcc # prereq for numpy upgrade
+    conda upgrade -y numpy # upgraded numpy is a prereq for gym
