@@ -1,10 +1,7 @@
 language: python
 python:
   - "3.5"
-before_install:
-  - pip install --upgrade pip setuptools wheel nose
-  - pip install --only-binary=numpy,scipy numpy scipy
 install:
-  - python setup.py install
+  - pip install pylint
 script:
   - pylint --disable=locally-disabled,fixme src
