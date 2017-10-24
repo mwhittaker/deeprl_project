@@ -1,4 +1,4 @@
-"""This module performs rollouts."""
+"""This module contains code for performing (vectorized) rollouts."""
 
 import numpy as np
 
