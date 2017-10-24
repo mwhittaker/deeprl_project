@@ -18,7 +18,7 @@ class _NoopResetEnv(gym.Wrapper):
         self.noop_max = noop_max
         assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
 
-    def _reset(self):
+    def _reset(self, **_):
         """ Do no-op action for a number of steps in [1, noop_max]."""
         self.env.reset()
         noops = np.random.randint(1, self.noop_max + 1)
@@ -33,7 +33,7 @@ class _FireResetEnv(gym.Wrapper):
         assert env.unwrapped.get_action_meanings()[1] == 'FIRE'
         assert len(env.unwrapped.get_action_meanings()) >= 3
 
-    def _reset(self):
+    def _reset(self, **_):
         self.env.reset()
         obs, _, _, _ = self.env.step(1)
         obs, _, _, _ = self.env.step(2)
@@ -64,7 +64,7 @@ class _EpisodicLifeEnv(gym.Wrapper):
         self.lives = lives
         return obs, reward, done, info
 
-    def _reset(self):
+    def _reset(self, **_):
         """
         Reset only when lives are exhausted.
         This way all states are still reachable even though lives are episodic,
@@ -102,7 +102,7 @@ class _MaxAndSkipEnv(gym.Wrapper):
 
         return max_frame, total_reward, done, info
 
-    def _reset(self):
+    def _reset(self, **_):
         """Clear past frame buffer and init. to first obs. from inner env."""
         self._obs_buffer.clear()
         obs = self.env.reset()
@@ -128,7 +128,7 @@ class _ProcessFrame84(gym.Wrapper):
         obs, reward, done, info = self.env.step(action)
         return _process_frame84(obs), reward, done, info
 
-    def _reset(self):
+    def _reset(self, **_):
         return _process_frame84(self.env.reset())
 
 class _ClippedRewardsWrapper(gym.Wrapper):
