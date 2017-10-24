@@ -21,7 +21,6 @@ def read_action_from_stdin():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--render', action="store_true")
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
 
@@ -32,15 +31,12 @@ def main():
     env = atari_env.gen_pong_env(args.seed)
 
     obs = env.reset()
-    if args.render:
-        env.render()
-
+    env.render()
     done = False
     while not done:
         act = read_action_from_stdin()
         obs, reward, done, info = env.step(act)
-        if args.render:
-            env.render()
+        env.render()
 
 if __name__ == "__main__":
     main()
