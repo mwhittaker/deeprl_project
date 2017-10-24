@@ -86,7 +86,7 @@ class Dataset:
         rewards = np.concatenate([path.rewards for path in paths])
         acs = np.concatenate([path.acs for path in paths])
         ep_lens = np.array([len(path.obs) for path in paths])
-        
+
         return Dataset(
             get_ob_dim(env), get_num_acs(env), obs, next_obs, rewards,
             acs, ep_lens)

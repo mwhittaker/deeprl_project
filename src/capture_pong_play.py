@@ -7,7 +7,7 @@ import numpy as np
 from atari_env import gen_pong_env
 from dataset import Dataset
 from sample import sample
-from utils import create_random_policy, save_object
+from utils import create_random_policy
 
 def main():
     """
