@@ -5,7 +5,7 @@ agents.
 
 import numpy as np
 
-from utils import get_ob_dim
+from utils import get_ob_dim, get_num_acs
 
 class Path:
     """
@@ -68,14 +68,25 @@ class Path:
 class Dataset:
     """Stores a set of paths, and (will) provide convient access to them."""
 
-    def __init__(self, ob_dim, num_acs, paths):
+    def __init__(self, ob_dim, num_acs, obs, next_obs, rewards, acs, ep_lens):
         super().__init__()
         self.ob_dim = ob_dim
         self.num_acs = num_acs
-        self._paths = paths
+        self.ep_lens = ep_lens
+        self.obs = obs
+        self.next_obs = next_obs
+        self.rewards = rewards
+        self.acs = acs
 
-        # all observations/etc across time
-        self.obs = np.concatenate([path.obs for path in paths])
-        self.next_obs = np.concatenate([path.next_obs for path in paths])
-        self.rewards = np.concatenate([path.rewards for path in paths])
-        self.acs = np.concatenate([path.acs for path in paths])
+    @staticmethod
+    def from_paths(env, paths):
+        """Generate a Dataset from paths."""
+        obs = np.concatenate([path.obs for path in paths])
+        next_obs = np.concatenate([path.next_obs for path in paths])
+        rewards = np.concatenate([path.rewards for path in paths])
+        acs = np.concatenate([path.acs for path in paths])
+        ep_lens = np.array([len(path.obs) for path in paths])
+        
+        return Dataset(
+            get_ob_dim(env), get_num_acs(env), obs, next_obs, rewards,
+            acs, ep_lens)

@@ -7,7 +7,7 @@ import numpy as np
 from atari_env import gen_pong_env
 from dataset import Dataset
 from sample import sample
-from utils import get_ob_dim, get_num_acs, create_random_policy, save_object
+from utils import create_random_policy, save_object
 
 def main():
     """
@@ -33,8 +33,8 @@ def main():
         paths.append(path)
         num_timesteps += len(path.obs)
 
-    dataset = Dataset(get_ob_dim(env), get_num_acs(env), paths)
-    save_object(dataset, args.savefile)
+    dataset = Dataset.from_paths(env, paths)
+    print('Generated', len(dataset.obs), 'timesteps total')
 
 if __name__ == "__main__":
     main()
