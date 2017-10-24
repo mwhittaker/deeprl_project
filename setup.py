@@ -11,7 +11,6 @@ setup(
         'numpy>=1.13',
         'mujoco_py==0.5.7',
         'gym[all]',
-        'tensorflow-gpu', # or tensorflow if cpu only
         'universe'
     ],
 )
