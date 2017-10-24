@@ -5,13 +5,14 @@ agents.
 
 import numpy as np
 
-from utils import get_ob_dim, get_num_acs
+from utils import get_ob_dim
 
 class Path:
     """
     A Path is a trace of the observations, actions, resulting
     observations, and rewards. The horizon can be expanded if the
-    epsiode lasts longer.
+    epsiode lasts longer. Assumes continuous Box observations
+    and Discrete actions.
     """
     def __init__(self, env, initial_obs, horizon=8196):
         super().__init__()

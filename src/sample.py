@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from dataset import Path, Dataset
+from dataset import Path
 
 def sample(env, policy, num_paths=10):
     """
@@ -24,6 +24,5 @@ def sample(env, policy, num_paths=10):
             ac = policy(obs[np.newaxis, :])[0]
             obs, reward, done, _ = env.step(ac)
             path.next(obs, reward, ac)
-        print(len(path.obs))
         paths.append(path)
     return paths
