@@ -1,12 +1,13 @@
 """When run, this python file runs Pong and stores the observed games."""
 
 import argparse
+from multiprocessing import cpu_count
 
 import numpy as np
 
-from atari_env import gen_pong_env
+from atari_env import gen_vectorized_pong_env
 from dataset import Dataset
-from sample import sample
+from sample import vsample
 from utils import create_random_policy
 
 def main():
@@ -18,22 +19,25 @@ def main():
     parser.add_argument('--maxsteps', type=int, default=100000)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--savefile', type=str, required=True)
+    nproc = max(cpu_count() - 1, 1)
+    parser.add_argument('--maxprocs', type=int, default=nproc)
     args = parser.parse_args()
 
     seed = args.seed
-    env = gen_pong_env(seed)
     np.random.seed(seed)
+    venv = gen_vectorized_pong_env(args.maxprocs)
+    policy = create_random_policy(venv)
 
     num_timesteps = 0
     paths = []
     while num_timesteps < args.maxsteps:
         print('{: 10d} of {: 10d} steps'.format(
             num_timesteps, args.maxsteps))
-        path = sample(env, create_random_policy(env), num_paths=1)[0]
-        paths.append(path)
-        num_timesteps += len(path.obs)
+        new_paths = vsample(venv, policy)
+        paths += new_paths
+        num_timesteps += sum(len(path.obs) for path in new_paths)
 
-    dataset = Dataset.from_paths(env, paths)
+    dataset = Dataset.from_paths(venv, paths)
     print('Generated', len(dataset.obs), 'timesteps total')
 
 if __name__ == "__main__":
