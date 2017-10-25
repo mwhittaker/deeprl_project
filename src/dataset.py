@@ -2,8 +2,10 @@
 The Path and Dataset contain the data that is operated on by all RL
 agents.
 """
+import os
 
 import numpy as np
+import h5py
 
 from utils import get_ob_dim, get_num_acs
 
@@ -68,25 +70,43 @@ class Path:
 class Dataset:
     """Stores a set of paths, and (will) provide convient access to them."""
 
-    def __init__(self, ob_dim, num_acs, obs, next_obs, rewards, acs, ep_lens):
+    def __init__(self, **kwargs):
         super().__init__()
-        self.ob_dim = ob_dim
-        self.num_acs = num_acs
-        self.ep_lens = ep_lens
-        self.obs = obs
-        self.next_obs = next_obs
-        self.rewards = rewards
-        self.acs = acs
+        for k, v in kwargs.items():
+            setattr(self, k, np.asarray(v))
+        assert self._keys() == set(kwargs.keys())
+
+    @staticmethod
+    def _keys():
+        return {'ob_dim', 'num_acs', 'obs', 'next_obs', 'rewards',
+                'acs', 'ep_lens'}
 
     @staticmethod
     def from_paths(env, paths):
         """Generate a Dataset from paths."""
-        obs = np.concatenate([path.obs for path in paths])
-        next_obs = np.concatenate([path.next_obs for path in paths])
-        rewards = np.concatenate([path.rewards for path in paths])
-        acs = np.concatenate([path.acs for path in paths])
-        ep_lens = np.array([len(path.obs) for path in paths])
+        kwargs = {
+            'obs': np.concatenate([path.obs for path in paths]),
+            'next_obs': np.concatenate([path.next_obs for path in paths]),
+            'rewards': np.concatenate([path.rewards for path in paths]),
+            'acs': np.concatenate([path.acs for path in paths]),
+            'ep_lens': [len(path.obs) for path in paths],
+            'ob_dim': get_ob_dim(env),
+            'num_acs': get_num_acs(env)}
+        return Dataset(**kwargs)
 
-        return Dataset(
-            get_ob_dim(env), get_num_acs(env), obs, next_obs, rewards,
-            acs, ep_lens)
+    def save(self, savefile):
+        """Save a dataset to disk in h5py format"""
+        with h5py.File(os.path.join(savefile), 'w') as f:
+            ds = f.create_group('dataset')
+            for attr_name in Dataset._keys():
+                attr = getattr(self, attr_name)
+                ds.create_dataset(attr_name, data=attr)
+
+    @staticmethod
+    def load(savefile):
+        """Recover a saved dataset"""
+        with h5py.File(os.path.join(savefile), 'r') as f:
+            ds = f.require_group('dataset')
+            kwargs = {attr_name: ds[attr_name][()]
+                    for attr_name in Dataset._keys()}
+        return Dataset(**kwargs)

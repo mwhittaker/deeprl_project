@@ -39,6 +39,7 @@ def main():
 
     dataset = Dataset.from_paths(venv, paths)
     print('Generated', len(dataset.obs), 'timesteps total')
+    dataset.save(args.savefile)
 
 if __name__ == "__main__":
     main()
