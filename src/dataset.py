@@ -108,5 +108,5 @@ class Dataset:
         with h5py.File(os.path.join(savefile), 'r') as f:
             ds = f.require_group('dataset')
             kwargs = {attr_name: ds[attr_name][()]
-                    for attr_name in Dataset._keys()}
+                      for attr_name in Dataset._keys()}
         return Dataset(**kwargs)
