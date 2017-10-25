@@ -6,11 +6,9 @@ which is buggy. See https://github.com/openai/universe/pull/211.
 
 import logging
 import multiprocessing
-import numpy as np
 import traceback
 
 import gym
-from gym import spaces
 
 _logger = logging.getLogger(__name__)
 _logger.setLevel(logging.INFO)
@@ -55,12 +53,13 @@ class _Worker(object):
     # Control methods
 
     def start(self):
+        """Start worker process"""
         self.joiner.start()
 
     def _parent_recv(self):
         rendered, res = self.parent_conn.recv()
         if rendered is not None:
-            raise Exception('[_Worker {}] Error: {} ({})\n\n{}'.format(
+            raise RuntimeError('[_Worker {}] Error: {} ({})\n\n{}'.format(
                 self.worker_idx, rendered['message'],
                 rendered['type'], rendered['traceback']))
         return res
@@ -82,15 +81,19 @@ class _Worker(object):
                               ' {}'.format(self.worker_idx, res))
 
     def close_start(self):
+        """Close worker env, notify parent (currently no cleanup)"""
         self._parent_send(('close', None))
 
     def close_finish(self):
+        """Finish up process"""
         self.joiner.join()
 
     def reset_start(self):
+        """Reset worker env"""
         self._parent_send(('reset', None))
 
     def reset_finish(self):
+        """Notify parent of worker env reset"""
         return self._parent_recv()
 
     def step_start(self, action_m):
@@ -98,29 +101,36 @@ class _Worker(object):
         self._parent_send(('step', action_m))
 
     def step_finish(self):
+        """notify parent of step finish"""
         return self._parent_recv()
 
     def mask_start(self, i):
+        """Mask an env from being stepped"""
         self._parent_send(('mask', i))
 
     def seed_start(self, seed_m):
+        """Seed envs"""
         self._parent_send(('seed', seed_m))
 
     def render_start(self, mode, close):
+        """render envs"""
         self._parent_send(('render', (mode, close)))
 
     def render_finish(self):
+        """notify parent render finished"""
         return self._parent_recv()
 
     def run(self):
+        """run receive loop on remote worker process"""
         try:
             self.do_run()
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-except
             rendered = _render_dict(e)
             self.child_conn.send((rendered, None))
             return
 
     def do_run(self):
+        """receive loop called in separate process"""
         # Child only!
         self.parent_conn.close()
 
@@ -142,7 +152,8 @@ class _Worker(object):
                 self.mask[i] = False
             elif method == 'seed':
                 seeds = body
-                [env.seed(seed) for env, seed in zip(self.env_m, seeds)]
+                for env, seed in zip(self.env_m, seeds):
+                    env.seed(seed)
             elif method == 'render':
                 mode, close = body
                 if mode == 'human':
@@ -153,9 +164,10 @@ class _Worker(object):
                               for env in self.env_m]
                 self._child_send(result)
             else:
-                raise Error('Bad method: {}'.format(method))
+                raise RuntimeError('Bad method: {}'.format(method))
 
     def step_m(self, action_m):
+        """Step all envs in the worker"""
         observation_m = []
         reward_m = []
         done_m = []
@@ -208,16 +220,16 @@ def _reset_n(worker_n):
     return observation_n
 
 
-def _seed_n(worker_n, _seed_n):
+def _seed_n(worker_n, seeds):
     accumulated = 0
     for worker in worker_n:
-        seed_m = _seed_n[accumulated:accumulated+worker.m]
+        seed_m = seeds[accumulated:accumulated+worker.m]
         worker.seed_start(seed_m)
         accumulated += worker.m
 
 def _mask(worker_n, i):
     accumulated = 0
-    for k, worker in enumerate(worker_n):
+    for _, worker in enumerate(worker_n):
         if accumulated + worker.m <= i:
             accumulated += worker.m
         else:
@@ -236,8 +248,7 @@ def _render_n(worker_n, mode, close):
         res += worker.render_finish()
     if mode != 'human':
         return res
-    else:
-        return None
+    return None
 
 def _close_n(worker_n):
     if worker_n is None:
@@ -246,7 +257,7 @@ def _close_n(worker_n):
     for worker in worker_n:
         try:
             worker.close_start()
-        except Error:
+        except: # pylint: disable=bare-except
             pass
 
 class MultiprocessingEnv(gym.Env):
@@ -254,9 +265,9 @@ class MultiprocessingEnv(gym.Env):
     Vectorized environment which uses multiple CPU processors to generate
     several rollouts at once.
     """
-    
+
     def __init__(self, envs):
-        assert len(envs) > 0, len(envs)
+        assert envs, len(envs)
         self.envs = envs
         self.worker_n = None
 
@@ -275,20 +286,21 @@ class MultiprocessingEnv(gym.Env):
             envs = self.envs[i:i+m]
             self.worker_n.append(_Worker(envs, i))
 
-    def _seed(self, seed):
+    def _seed(self, seed=None):
         _seed_n(self.worker_n, seed)
         return [[seed_i] for seed_i in seed]
 
     def _reset(self):
         return _reset_n(self.worker_n)
 
-    def _step(self, action_n):
-        return _step_n(self.worker_n, action_n)
+    def _step(self, action):
+        return _step_n(self.worker_n, action)
 
     def _render(self, mode='human', close=False):
         return _render_n(self.worker_n, mode=mode, close=close)
 
     def mask(self, i):
+        """Mask an environment from being stepped until next reset."""
         _mask(self.worker_n, i)
 
     def _close(self):
