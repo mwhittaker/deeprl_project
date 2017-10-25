@@ -11,7 +11,7 @@ import numpy as np
 
 import atari_env
 
-def read_action_from_stdin():
+def _read_action_from_stdin():
     allowable_actions = ["0", "1", "2", "3", "4", "5"]
     action = input()
     while action not in allowable_actions:
@@ -20,6 +20,7 @@ def read_action_from_stdin():
     return int(action)
 
 def main():
+    """Plays pong with the keyboard."""
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=0)
     args = parser.parse_args()
@@ -30,12 +31,12 @@ def main():
     random.seed(seed)
     env = atari_env.gen_pong_env(args.seed)
 
-    obs = env.reset()
+    _obs = env.reset()
     env.render()
     done = False
     while not done:
-        act = read_action_from_stdin()
-        obs, reward, done, info = env.step(act)
+        act = _read_action_from_stdin()
+        _obs, _reward, done, _info = env.step(act)
         env.render()
 
 if __name__ == "__main__":
