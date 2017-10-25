@@ -2,11 +2,12 @@
 
 from collections import deque
 
+import cv2
 import gym
 from gym import spaces
 import numpy as np
 
-import cv2
+from multiprocessing_env import MultiprocessingEnv
 
 class _NoopResetEnv(gym.Wrapper):
     """
