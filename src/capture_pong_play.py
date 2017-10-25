@@ -19,11 +19,13 @@ def main():
     parser.add_argument('--maxsteps', type=int, default=100000)
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--savefile', type=str, required=True)
+    nproc = max(cpu_count() - 1, 1)
+    parser.add_argument('--maxprocs', type=int, default=nproc)
     args = parser.parse_args()
 
     seed = args.seed
     np.random.seed(seed)
-    venv = gen_vectorized_pong_env(max(cpu_count() - 1, 1))
+    venv = gen_vectorized_pong_env(args.maxprocs)
     policy = create_random_policy(venv)
 
     num_timesteps = 0
