@@ -1,8 +1,9 @@
 """Miscellaneous, small utilities"""
 
-import pickle
-import numpy as np
 import gym
+import numpy as np
+import pickle
+import tensorflow as tf
 
 def save_object(obj, filename):
     """Pickle an object to a file, overwriting if the file exists"""
@@ -37,3 +38,8 @@ def create_random_policy(env):
     num_acs = get_num_acs(env)
     return lambda states_ns: (
         np.random.randint(num_acs, size=(states_ns.shape[0],)))
+
+ACTIVATION_FUNCTIONS_BY_NAME = {
+    'tanh': tf.nn.tanh,
+    'relu': tf.nn.relu,
+    'elu': tf.nn.elu }
