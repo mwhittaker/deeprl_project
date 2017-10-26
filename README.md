@@ -26,3 +26,8 @@ Installing OpenAI baselines
 	brew install mpich
 	env MPICC=/usr/local/Cellar/mpich/3.2_3/bin/mpicc pip install mpi4py
 	# (if that fails, use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly)
+
+Train PPO agent
+
+	cd src
+	python run_atari_ppo.py [opt: --max_timesteps=1000]

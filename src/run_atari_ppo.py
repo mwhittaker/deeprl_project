@@ -1,5 +1,4 @@
 """Trains PPO agent and plays Atari Pong."""
-#!/usr/bin/env python
 
 import os.path as osp
 import logging
@@ -8,15 +7,10 @@ import gym
 from baselines.common import set_global_seeds
 from baselines import bench
 from baselines import logger
+import atari_env
 
-def wrap_train(env):
-    """Helper function."""
-    from baselines.common.atari_wrappers import (wrap_deepmind, FrameStack)
-    env = wrap_deepmind(env, clip_rewards=True)
-    env = FrameStack(env, 4)
-    return env
 
-def train(env_id, num_frames, seed):
+def train(env_id, num_frames, seed, max_ts):
     """Train agent."""
     from baselines.ppo1 import pposgd_simple, cnn_policy
     import baselines.common.tf_util as U
@@ -28,7 +22,7 @@ def train(env_id, num_frames, seed):
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     set_global_seeds(workerseed)
     env = gym.make(env_id)
-    def policy_fn(name, ob_space, ac_space): #pylint: disable=W0613
+    def policy_fn(name, ob_space, ac_space):
         """Given an obs, returns an act."""
         return cnn_policy.CnnPolicy(name=name, ob_space=ob_space,
                                     ac_space=ac_space)
@@ -37,8 +31,8 @@ def train(env_id, num_frames, seed):
     env.seed(workerseed)
     gym.logger.setLevel(logging.WARN)
 
-    env = wrap_train(env)
-    num_timesteps = int(num_frames / 4 * 1.1)
+    env = atari_env.wrap_train(env)
+    num_timesteps = max_ts or int(num_frames / 4 * 1.1)
     env.seed(workerseed)
 
     pposgd_simple.learn(env, policy_fn,
@@ -60,8 +54,9 @@ def main():
                       default='PongNoFrameskip-v4'
                      )
     prsr.add_argument('--seed', help='RNG seed', type=int, default=0)
+    prsr.add_argument("--max_timesteps", type=int)
     args = prsr.parse_args()
-    train(args.env, num_frames=40e6, seed=args.seed)
+    train(args.env, num_frames=40e6, seed=args.seed, max_ts=args.max_timesteps)
 
 if __name__ == '__main__':
     main()

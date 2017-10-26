@@ -8,6 +8,7 @@ from gym import spaces
 import numpy as np
 
 from multiprocessing_env import MultiprocessingEnv
+from baselines.common.atari_wrappers import (wrap_deepmind, FrameStack)
 
 class _NoopResetEnv(gym.Wrapper):
     """
@@ -148,16 +149,10 @@ def _wrap_deepmind_ram(env):
     env = _ClippedRewardsWrapper(env)
     return env
 
-def _wrap_deepmind(env):
-    """Applies various Atari-specific wrappers to make learning easier."""
-    assert 'NoFrameskip' in env.spec.id
-    env = _EpisodicLifeEnv(env)
-    env = _NoopResetEnv(env, noop_max=30)
-    env = _MaxAndSkipEnv(env, skip=4)
-    if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = _FireResetEnv(env)
-    env = _ProcessFrame84(env)
-    env = _ClippedRewardsWrapper(env)
+def wrap_train(env):
+    """Helper function."""
+    env = wrap_deepmind(env, clip_rewards=True)
+    env = FrameStack(env, 4)
     return env
 
 def gen_pong_env(seed):
@@ -170,7 +165,7 @@ def gen_pong_env(seed):
     env.seed(seed)
 
     # Can wrap in gym.wrappers.Monitor here if we want to record.
-    env = _wrap_deepmind(env)
+    env = wrap_deepmind(env)
     return env
 
 def gen_vectorized_pong_env(n):
@@ -183,7 +178,7 @@ def gen_vectorized_pong_env(n):
     task = benchmark.tasks[3]
 
     env_id = task.env_id
-    envs = [_wrap_deepmind(gym.make(env_id)) for _ in range(n)]
+    envs = [wrap_deepmind(gym.make(env_id)) for _ in range(n)]
     env = MultiprocessingEnv(envs)
 
     seeds = [int(s) for s in np.random.randint(0, 2 ** 30, size=n)]
