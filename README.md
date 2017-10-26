@@ -17,10 +17,12 @@ Installing OpenAI baselines
 
 	git clone https://github.com/openai/baselines.git
 	cd baselines
+	sudo apt-get install mpich 	# see Mac OS version below
+	env MPICC=/usr/bin/mpicc pip install mpi4py	# see Mac OS version below
 	pip install -e .
+	cd ..
 
-	## on MacOS, may need to run the following before 'pip install -e .':
+	## Mac OS
 	brew install mpich
-	# use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly:
 	env MPICC=/usr/local/Cellar/mpich/3.2_3/bin/mpicc pip install mpi4py
-
+	# (if that fails, use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly)
