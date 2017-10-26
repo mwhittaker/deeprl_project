@@ -171,3 +171,11 @@ def gen_pong_env(seed):
     # Can wrap in gym.wrappers.Monitor here if we want to record.
     env = _wrap_deepmind(env)
     return env
+
+def gen_pong_ram_env(seed):
+    """Generate a pong RAM environment, with all the bells and whistles."""
+    env = gym.make("Pong-ram-v0")
+    env.seed(seed)
+    # Can wrap in gym.wrappers.Monitor here if we want to record.
+    env = _wrap_deepmind_ram(env)
+    return env
