@@ -2,11 +2,12 @@
 
 from collections import deque
 
+import cv2
 import gym
 from gym import spaces
 import numpy as np
 
-import cv2
+from multiprocessing_env import MultiprocessingEnv
 
 class _NoopResetEnv(gym.Wrapper):
     """
@@ -170,6 +171,23 @@ def gen_pong_env(seed):
 
     # Can wrap in gym.wrappers.Monitor here if we want to record.
     env = _wrap_deepmind(env)
+    return env
+
+def gen_vectorized_pong_env(n):
+    """
+    Generate a vectorized pong environment, with n simultaneous
+    differently-seeded envs. For deterministic seeding, you
+    should seed np.random.seed beforehand.
+    """
+    benchmark = gym.benchmark_spec('Atari40M')
+    task = benchmark.tasks[3]
+
+    env_id = task.env_id
+    envs = [_wrap_deepmind(gym.make(env_id)) for _ in range(n)]
+    env = MultiprocessingEnv(envs)
+
+    seeds = [int(s) for s in np.random.randint(0, 2 ** 30, size=n)]
+    env.seed(seeds)
     return env
 
 def gen_pong_ram_env(seed):
