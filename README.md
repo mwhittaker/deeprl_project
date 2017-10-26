@@ -30,4 +30,4 @@ Installing OpenAI baselines
 Train PPO agent
 
 	cd src
-	python run_atari_ppo.py [opt: --max_timesteps=1000]
+	python run_atari_ppo.py [--max_timesteps=1]
