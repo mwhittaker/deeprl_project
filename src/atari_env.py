@@ -1,14 +1,23 @@
 """Wrappers for Atari playing, adopted from Deep RL HW3 starter code."""
 
-from collections import deque
-
-import cv2
 import gym
-from gym import spaces
 import numpy as np
 
 from multiprocessing_env import MultiprocessingEnv
 from baselines.common.atari_wrappers import (wrap_deepmind, FrameStack)
+from baselines.common.atari_wrappers import (NoopResetEnv, FireResetEnv,
+                                             EpisodicLifeEnv, MaxAndSkipEnv,
+                                             ClipRewardEnv)
+
+def _wrap_deepmind_ram(env):
+    """Applies various Atari-specific wrappers to make learning easier."""
+    env = EpisodicLifeEnv(env)
+    env = NoopResetEnv(env, noop_max=30)
+    env = MaxAndSkipEnv(env, skip=4)
+    if 'FIRE' in env.unwrapped.get_action_meanings():
+        env = FireResetEnv(env)
+    env = ClipRewardEnv(env)
+    return env
 
 def wrap_train(env):
     """Helper function."""
