@@ -8,7 +8,6 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import numpy as np
 import tensorflow as tf
 
 import atari_env
@@ -20,8 +19,9 @@ def _delayed_policy(policy, delay):
         return policy(obs)
     return _policy
 
-def get_parser():
+def _get_parser():
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "--seed",
         type=int,
@@ -52,11 +52,14 @@ def get_parser():
         action="store_true",
         help="Compute the frequency with which bytes in RAM change",
     )
+
     return parser
 
+# pylint: disable=too-many-branches
 def main():
     """Run pong and inspect the RAM."""
-    args = get_parser().parse_args()
+    parser = _get_parser()
+    args = parser.parse_args()
 
     # Generate the environment.
     tf.set_random_seed(args.seed)
