@@ -39,7 +39,7 @@ def create_random_policy(env):
     return lambda states_ns: (
         np.random.randint(num_acs, size=(states_ns.shape[0],)))
 
-ACTIVATION_FUNCTIONS_BY_NAME = {
-    'tanh': tf.nn.tanh,
-    'relu': tf.nn.relu,
-    'elu': tf.nn.elu }
+def check_shape(batch_tf, shape):
+    """Checks that each item in a batch has specified shape"""
+    item_shape = [dim.value for dim in batch_tf.shape[1:]]
+    assert item_shape == shape, (item_shape, shape)
