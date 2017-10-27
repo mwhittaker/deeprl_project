@@ -4,7 +4,6 @@ import argparse
 import os
 
 from baselines.common import set_global_seeds
-import numpy as np
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
 

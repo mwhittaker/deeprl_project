@@ -4,8 +4,7 @@ Autoencoder, with shape specifically chosen for Atari 84x84 images.
 import numpy as np
 import tensorflow as tf
 
-from feature_extraction import atari_features
-from utils import get_ob_dim, check_shape
+from utils import check_shape
 
 class AtariAutoencoder:
     """

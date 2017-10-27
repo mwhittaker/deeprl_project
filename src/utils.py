@@ -1,9 +1,8 @@
 """Miscellaneous, small utilities"""
+import pickle
 
 import gym
 import numpy as np
-import pickle
-import tensorflow as tf
 
 def save_object(obj, filename):
     """Pickle an object to a file, overwriting if the file exists"""
