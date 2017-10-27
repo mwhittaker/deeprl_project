@@ -1,4 +1,6 @@
-"""Trains PPO agent and plays Atari Pong."""
+"""Trains PPO agent and plays Atari Pong.
+Adapted from: baselines.ppo1.run_atari (MIT License)
+"""
 
 import os.path as osp
 import logging
