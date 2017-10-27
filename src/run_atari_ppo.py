@@ -4,11 +4,13 @@ Adapted from: baselines.ppo1.run_atari (MIT License)
 
 import os.path as osp
 import logging
+
 from mpi4py import MPI
 import gym
 from baselines.common import set_global_seeds
 from baselines import bench
 from baselines import logger
+
 import atari_env
 
 
@@ -19,7 +21,10 @@ def train(num_frames, seed, max_ts, logdir):
     rank = MPI.COMM_WORLD.Get_rank()
     sess = U.single_threaded_session()
     sess.__enter__()
-    logger.configure(osp.join(logdir, "%i.log.json" % rank))
+    if rank == 0:
+        logger.configure(osp.join(logdir, "log.json"))
+    else:
+        logger.set_level(logger.DISABLED)
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     set_global_seeds(workerseed)
     env = atari_env.gen_pong_env(workerseed, frame_stack=True)
