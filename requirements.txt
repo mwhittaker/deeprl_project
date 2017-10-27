@@ -1,5 +1,6 @@
 scipy
 numpy>=1.13
+scikit-learn
 mujoco_py==0.5.7
 gym[atari,mujoco,classic_control]
 opencv-python
