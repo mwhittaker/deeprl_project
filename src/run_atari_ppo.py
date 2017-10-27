@@ -12,7 +12,7 @@ from baselines import logger
 import atari_env
 
 
-def train(env_id, num_frames, seed, max_ts, logdir):
+def train(num_frames, seed, max_ts, logdir):
     """Train agent."""
     from baselines.ppo1 import pposgd_simple, cnn_policy
     import baselines.common.tf_util as U
@@ -22,7 +22,7 @@ def train(env_id, num_frames, seed, max_ts, logdir):
     logger.configure(osp.join(logdir, "%i.log.json" % rank))
     workerseed = seed + 10000 * MPI.COMM_WORLD.Get_rank()
     set_global_seeds(workerseed)
-    env = gym.make(env_id)
+    env = atari_env.gen_pong_env(workerseed, frame_stack=True)
     def policy_fn(name, ob_space, ac_space):
         """Given an obs, returns an act."""
         return cnn_policy.CnnPolicy(name=name, ob_space=ob_space,
@@ -32,7 +32,6 @@ def train(env_id, num_frames, seed, max_ts, logdir):
     env.seed(workerseed)
     gym.logger.setLevel(logging.WARN)
 
-    env = atari_env.wrap_train(env)
     num_timesteps = max_ts or int(num_frames / 4 * 1.1)
     env.seed(workerseed)
 
@@ -54,13 +53,12 @@ def main():
     prsr.add_argument('--logdir', help='logging directory',
                       default='/tmp/'
                      )
-    prsr.add_argument('--env', help='environment ID',
-                      default='PongNoFrameskip-v4'
-                     )
     prsr.add_argument('--seed', help='RNG seed', type=int, default=0)
     prsr.add_argument("--max_timesteps", type=int)
     args = prsr.parse_args()
-    train(args.env, num_frames=40e6, seed=args.seed,
+
+    
+    train(num_frames=40e6, seed=args.seed,
           max_ts=args.max_timesteps, logdir=args.logdir)
 
 if __name__ == '__main__':
