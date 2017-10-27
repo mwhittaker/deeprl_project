@@ -1,6 +1,12 @@
 scipy
 numpy>=1.13
 mujoco_py==0.5.7
-gym[atari]
+gym[atari,mujoco,classic_control]
 opencv-python
 h5py
+tqdm
+joblib
+zmq
+dill
+azure==1.0.3
+progressbar2
