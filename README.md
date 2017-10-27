@@ -15,19 +15,20 @@ Our dependencies require Python 3.5 (and assume appropriate GPU drivers have alr
 
 Installing OpenAI baselines
 
-	git clone https://github.com/openai/baselines.git
-	cd baselines
-	sudo apt install -y mpich # see Mac OS version below
-	env MPICC=/usr/bin/mpicc pip install mpi4py	# see Mac OS version below
-	pip install --no-dependencies -e .
-	cd ..
+    git clone https://github.com/openai/baselines.git
+    cd baselines
+    git checkout 4993286230ac92ead39a66005b7042b56b8598b0
+    sudo apt install -y mpich # see Mac OS version below
+    env MPICC=/usr/bin/mpicc pip install mpi4py # see Mac OS version below
+    pip install --no-dependencies -e .
+    cd ..
 
-	## Mac OS
-	brew install mpich
-	env MPICC=/usr/local/Cellar/mpich/3.2_3/bin/mpicc pip install mpi4py
-	# (if that fails, use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly)
+    ## Mac OS
+    brew install mpich
+    env MPICC=/usr/local/Cellar/mpich/3.2_3/bin/mpicc pip install mpi4py
+    # (if that fails, use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly)
 
 Train PPO agent
 
-	cd src
-	python run_atari_ppo.py [--max_timesteps=1]
+    cd src
+    python run_atari_ppo.py [--max_timesteps=1]
