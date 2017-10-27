@@ -1,8 +1,8 @@
 """Miscellaneous, small utilities"""
-
 import pickle
-import numpy as np
+
 import gym
+import numpy as np
 
 def save_object(obj, filename):
     """Pickle an object to a file, overwriting if the file exists"""
@@ -37,3 +37,8 @@ def create_random_policy(env):
     num_acs = get_num_acs(env)
     return lambda states_ns: (
         np.random.randint(num_acs, size=(states_ns.shape[0],)))
+
+def check_shape(batch_tf, shape):
+    """Checks that each item in a batch has specified shape"""
+    item_shape = [dim.value for dim in batch_tf.shape[1:]]
+    assert item_shape == shape, (item_shape, shape)
