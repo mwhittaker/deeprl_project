@@ -57,7 +57,7 @@ def main():
     prsr.add_argument("--max_timesteps", type=int)
     args = prsr.parse_args()
 
-    
+
     train(num_frames=40e6, seed=args.seed,
           max_ts=args.max_timesteps, logdir=args.logdir)
 
