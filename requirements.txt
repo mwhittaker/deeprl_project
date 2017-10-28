@@ -1,6 +1,8 @@
+pylint
 scipy
 numpy>=1.13
 mujoco_py==0.5.7
 gym[atari]
 opencv-python
 matplotlib
+h5py

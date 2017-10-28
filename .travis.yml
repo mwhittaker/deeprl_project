@@ -1,10 +1,10 @@
+sudo: required
 language: python
 python:
   - "3.5"
 install:
-  - pip install pylint
-  - pip install -r requirements.txt
-  - pip install tensorflow
+  - bash scripts/install_dependencies.sh
 script:
-  - PYTHONPATH=src pylint --disable=locally-disabled,fixme src
-  - python src/capture_pong_play.py --savefile temp.npz --maxsteps 1 --maxproc 1
+  - bash scripts/lint.sh
+  - bash scripts/run_all_environments.sh
+  - python src/run_atari_ppo.py --max_timesteps=1

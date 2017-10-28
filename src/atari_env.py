@@ -1,200 +1,147 @@
 """Wrappers for Atari playing, adopted from Deep RL HW3 starter code."""
 
-from collections import deque
-
-import cv2
 import gym
-from gym import spaces
 import numpy as np
 
 from multiprocessing_env import MultiprocessingEnv
+# from baselines.common.atari_wrappers import wrap_deepmind
+from baselines.common import atari_wrappers
 
-class _NoopResetEnv(gym.Wrapper):
+class _CherryPickedPongRamWrapper(gym.ObservationWrapper):
     """
-    Sample initial states by taking random number of no-ops on reset.
-    No-op is assumed to be action 0.
+    The Atari 2600 has 128 bytes of RAM. Thus, the Pong-ram-v0 environment's
+    observation space includes numpy arrays of 128 bytes. Only some of these
+    bytes are relevant to learning how to play Pong. Some are 0, some are
+    constant, and only a handful actually change value over the course of a
+    game. This wrapper extracts a set of hand-picked RAM values that seem to be
+    important. The values were selected manually by using
+    `pong_ram_inspector.py` to trace the values of RAM throughout the course of
+    a game.
     """
-    def __init__(self, env=None, noop_max=30):
-        super(_NoopResetEnv, self).__init__(env)
-        self.noop_max = noop_max
-        assert env.unwrapped.get_action_meanings()[0] == 'NOOP'
+    def __init__(self, env):
+        gym.ObservationWrapper.__init__(self, env)
+        self.indexes = [51, 50, 21, 60, 49, 4, 54, 11, 121, 12]
+        n = len(self.indexes)
+        self.observation_space = gym.spaces.Box(0.0, 255.0, shape=(n,))
 
-    def _reset(self, **_):
-        """ Do no-op action for a number of steps in [1, noop_max]."""
-        self.env.reset()
-        noops = np.random.randint(1, self.noop_max + 1)
-        for _ in range(noops):
-            obs, _, _, _ = self.env.step(0)
-        return obs
+    def _observation(self, observation):
+        return observation[self.indexes]
 
-class _FireResetEnv(gym.Wrapper):
-    """Take action on reset for environments that are fixed until firing."""
-    def __init__(self, env=None):
-        super(_FireResetEnv, self).__init__(env)
-        assert env.unwrapped.get_action_meanings()[1] == 'FIRE'
-        assert len(env.unwrapped.get_action_meanings()) >= 3
-
-    def _reset(self, **_):
-        self.env.reset()
-        obs, _, _, _ = self.env.step(1)
-        obs, _, _, _ = self.env.step(2)
-        return obs
-
-class _EpisodicLifeEnv(gym.Wrapper):
+def _wrap_deepmind(env,
+                   episode_life=True,
+                   clip_rewards=True,
+                   frame_stack=False,
+                   scale=False,
+                   warp_frame=False):
     """
-    Make end-of-life == end-of-episode, but only reset on true game over.
-    Done by DeepMind for the DQN since it helps value estimation.
+    A variant of wrap_deepmind [1] but with the ability to disaple frame
+    warping.
+
+    [1]: https://goo.gl/CfetYi
     """
-    def __init__(self, env=None):
-        super(_EpisodicLifeEnv, self).__init__(env)
-        self.lives = 0
-        self.was_real_done = True
-        self.was_real_reset = False
-
-    def _step(self, action):
-        obs, reward, done, info = self.env.step(action)
-        self.was_real_done = done
-        # check current lives, make loss of life terminal,
-        # then update lives to handle bonus lives
-        lives = self.env.unwrapped.ale.lives()
-        if lives < self.lives and lives > 0:
-            # for Qbert somtimes we stay in lives == 0 condtion for a few
-            # frames so its important to keep lives > 0, so that we only reset
-            # once the environment advertises done.
-            done = True
-        self.lives = lives
-        return obs, reward, done, info
-
-    def _reset(self, **_):
-        """
-        Reset only when lives are exhausted.
-        This way all states are still reachable even though lives are episodic,
-        and the learner need not know about any of this behind-the-scenes.
-        """
-        if self.was_real_done:
-            obs = self.env.reset()
-            self.was_real_reset = True
-        else:
-            # no-op step to advance from terminal/lost life state
-            obs, _, _, _ = self.env.step(0)
-            self.was_real_reset = False
-        self.lives = self.env.unwrapped.ale.lives()
-        return obs
-
-class _MaxAndSkipEnv(gym.Wrapper):
-    """Return only every `skip`-th frame"""
-    def __init__(self, env=None, skip=4):
-        super(_MaxAndSkipEnv, self).__init__(env)
-        # most recent raw observations (for max pooling across time steps)
-        self._obs_buffer = deque(maxlen=2)
-        self._skip = skip
-
-    def _step(self, action):
-        total_reward = 0.0
-        done = None
-        for _ in range(self._skip):
-            obs, reward, done, info = self.env.step(action)
-            self._obs_buffer.append(obs)
-            total_reward += reward
-            if done:
-                break
-
-        max_frame = np.max(np.stack(self._obs_buffer), axis=0)
-
-        return max_frame, total_reward, done, info
-
-    def _reset(self, **_):
-        """Clear past frame buffer and init. to first obs. from inner env."""
-        self._obs_buffer.clear()
-        obs = self.env.reset()
-        self._obs_buffer.append(obs)
-        return obs
-
-def _process_frame84(frame):
-    img = np.reshape(frame, [210, 160, 3]).astype(np.float32)
-    img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
-    resized_screen = cv2.resize(
-        img, (84, 110), interpolation=cv2.INTER_LINEAR)
-    x_t = resized_screen[18:102, :]
-    x_t = np.reshape(x_t, [84, 84, 1])
-    return x_t.astype(np.uint8)
-
-class _ProcessFrame84(gym.Wrapper):
-    """Wrapper to pre-process (rescale, greyscale) observations."""
-    def __init__(self, env=None):
-        super(_ProcessFrame84, self).__init__(env)
-        self.observation_space = spaces.Box(low=0, high=255, shape=(84, 84, 1))
-
-    def _step(self, action):
-        obs, reward, done, info = self.env.step(action)
-        return _process_frame84(obs), reward, done, info
-
-    def _reset(self, **_):
-        return _process_frame84(self.env.reset())
-
-class _ClippedRewardsWrapper(gym.Wrapper):
-    """Wrapper that clips gym rewards"""
-    def _step(self, action):
-        obs, reward, done, info = self.env.step(action)
-        return obs, np.sign(reward), done, info
-
-def _wrap_deepmind_ram(env):
-    """Applies various Atari-specific wrappers to make learning easier."""
-    env = _EpisodicLifeEnv(env)
-    env = _NoopResetEnv(env, noop_max=30)
-    env = _MaxAndSkipEnv(env, skip=4)
+    env = atari_wrappers.NoopResetEnv(env, noop_max=30)
+    env = atari_wrappers.MaxAndSkipEnv(env, skip=4)
+    if episode_life:
+        env = atari_wrappers.EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = _FireResetEnv(env)
-    env = _ClippedRewardsWrapper(env)
+        env = atari_wrappers.FireResetEnv(env)
+    if warp_frame:
+        env = atari_wrappers.WarpFrame(env)
+    if scale:
+        env = atari_wrappers.ScaledFloatFrame(env)
+    if clip_rewards:
+        env = atari_wrappers.ClipRewardEnv(env)
+    if frame_stack:
+        env = atari_wrappers.FrameStack(env, 4)
     return env
 
-def _wrap_deepmind(env):
-    """Applies various Atari-specific wrappers to make learning easier."""
-    assert 'NoFrameskip' in env.spec.id
-    env = _EpisodicLifeEnv(env)
-    env = _NoopResetEnv(env, noop_max=30)
-    env = _MaxAndSkipEnv(env, skip=4)
-    if 'FIRE' in env.unwrapped.get_action_meanings():
-        env = _FireResetEnv(env)
-    env = _ProcessFrame84(env)
-    env = _ClippedRewardsWrapper(env)
-    return env
-
-def gen_pong_env(seed):
-    """Generate a pong environment, with all the bells and whistles."""
-    benchmark = gym.benchmark_spec('Atari40M')
-    task = benchmark.tasks[3]
-
-    env_id = task.env_id
-    env = gym.make(env_id)
-    env.seed(seed)
-
-    # Can wrap in gym.wrappers.Monitor here if we want to record.
-    env = _wrap_deepmind(env)
-    return env
-
-def gen_pong_ram_env(seed):
-    """Generate a pong RAM environment, with all the bells and whistles."""
-    env = gym.make("Pong-ram-v0")
-    env.seed(seed)
-    # Can wrap in gym.wrappers.Monitor here if we want to record.
-    env = _wrap_deepmind_ram(env)
-    return env
-
-def gen_vectorized_pong_env(n):
+def _wrap_pong_env(env_thunk,
+                   vectorized_n=1,
+                   episode_life=True,
+                   clip_rewards=True,
+                   frame_stack=False,
+                   scale=False,
+                   warp_frame=False):
     """
-    Generate a vectorized pong environment, with n simultaneous
-    differently-seeded envs. For deterministic seeding, you
-    should seed np.random.seed beforehand.
+    _wrap_pong_env more or less wraps wrap_deepmind with some additional logic
+    to vectorize environments. `env_thunk` is an arity-0 function that returns
+    a fresh copy of an environment. The reason we cannot just pass in an
+    environment is that a MultiprocessingEnv requires multiple copies of an
+    environment, and there's not a nice way to copy an environment. See
+    `gen_pong_video_env` for a description of the other flags.
     """
-    benchmark = gym.benchmark_spec('Atari40M')
-    task = benchmark.tasks[3]
+    def _env():
+        env = env_thunk()
+        env = _wrap_deepmind(env,
+                             episode_life=episode_life,
+                             clip_rewards=clip_rewards,
+                             frame_stack=frame_stack,
+                             scale=scale,
+                             warp_frame=warp_frame)
+        return env
 
-    env_id = task.env_id
-    envs = [_wrap_deepmind(gym.make(env_id)) for _ in range(n)]
+    if vectorized_n == 1:
+        return _env()
+
+    envs = [_env() for _ in range(vectorized_n)]
     env = MultiprocessingEnv(envs)
-
-    seeds = [int(s) for s in np.random.randint(0, 2 ** 30, size=n)]
+    seeds = [int(s) for s in np.random.randint(0, 2 ** 30, size=vectorized_n)]
     env.seed(seeds)
-
     return env
+
+def gen_pong_ram_env(seed,
+                     cherry_picked=True,
+                     vectorized_n=1,
+                     episode_life=True,
+                     clip_rewards=True):
+    """
+    Returns a Pong environment with an observation space of RAM snapshots. If
+    `cherry_picked` is True, then only a hand-picked subset of the bytes in RAM
+    are returned. See `gen_pong_video_env` for a described of the other flags.
+    """
+    # TODO: Potentially add frame_stack.
+    # TODO: Consider if scale makes sense for RAM.
+
+    def _env_thunk():
+        env = gym.make("Pong-ram-v0")
+        env.seed(seed)
+        if cherry_picked:
+            env = _CherryPickedPongRamWrapper(env)
+        return env
+
+    return _wrap_pong_env(_env_thunk,
+                          vectorized_n=vectorized_n,
+                          episode_life=episode_life,
+                          clip_rewards=clip_rewards,
+                          frame_stack=False,
+                          scale=False,
+                          warp_frame=False)
+
+def gen_pong_video_env(seed,
+                       vectorized_n=1,
+                       episode_life=True,
+                       clip_rewards=True,
+                       frame_stack=False,
+                       scale=False,
+                       warp_frame=True):
+    """
+    Returns a Pong environment with an observation space of video frames.
+    If `vectorized_n` > 1, then `vectorized_n` copies of the environment will
+    be run in a `MultiprocessingEnv`. The `episode_life`, `clip_rewards`,
+    `frame_stack`, and `scale` flags are described here: https://goo.gl/CfetYi.
+    """
+    def _env_thunk():
+        benchmark = gym.benchmark_spec('Atari40M')
+        task = benchmark.tasks[3]
+        env_id = task.env_id
+        env = gym.make(env_id)
+        env.seed(seed)
+        return env
+
+    return _wrap_pong_env(_env_thunk,
+                          vectorized_n=vectorized_n,
+                          episode_life=episode_life,
+                          clip_rewards=clip_rewards,
+                          frame_stack=frame_stack,
+                          scale=scale,
+                          warp_frame=warp_frame)
