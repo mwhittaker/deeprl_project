@@ -3,17 +3,6 @@ language: python
 python:
   - "3.5"
 install:
-  - pip install pylint
-  - pip install -r requirements.txt
-  - pip install tensorflow
-  - git clone https://github.com/openai/baselines.git
-  - cd baselines
-  - git checkout 4993286
-  - sudo apt-get install mpich
-  - env MPICC=/usr/bin/mpicc pip install mpi4py
-  - pip install -e .
-  - cd ..
+  - bash scripts/install_dependencies.sh
 script:
-  - PYTHONPATH=src pylint --disable=locally-disabled,fixme src
-  - python src/capture_pong_play.py --savefile temp.h5 --maxsteps 1 --maxproc 1
-  - python src/run_atari_ppo.py --max_timesteps=1
+  - bash scripts/travis.sh

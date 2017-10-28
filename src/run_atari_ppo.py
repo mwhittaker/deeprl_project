@@ -9,8 +9,12 @@ import gym
 from baselines.common import set_global_seeds
 from baselines import bench
 from baselines import logger
-import atari_env
 
+def _wrap_train(env):
+    from baselines.common.atari_wrappers import (wrap_deepmind, FrameStack)
+    env = wrap_deepmind(env, clip_rewards=True)
+    env = FrameStack(env, 4)
+    return env
 
 def train(env_id, num_frames, seed, max_ts, logdir):
     """Train agent."""
@@ -32,7 +36,7 @@ def train(env_id, num_frames, seed, max_ts, logdir):
     env.seed(workerseed)
     gym.logger.setLevel(logging.WARN)
 
-    env = atari_env.wrap_train(env)
+    env = _wrap_train(env)
     num_timesteps = max_ts or int(num_frames / 4 * 1.1)
     env.seed(workerseed)
 

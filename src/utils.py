@@ -37,3 +37,20 @@ def create_random_policy(env):
     num_acs = get_num_acs(env)
     return lambda states_ns: (
         np.random.randint(num_acs, size=(states_ns.shape[0],)))
+
+def create_keyboard_policy(env):
+    """Generate a policy that reads actions stdin."""
+    num_acs = get_num_acs(env)
+
+    def _read_action():
+        allowable_actions = [str(x) for x in range(num_acs)]
+        action = input()
+        while action not in allowable_actions:
+            print("Error: valid actions in range [0, {}].".format(num_acs - 1))
+            action = input()
+        return int(action)
+
+    def _read_actions(states_ns):
+        return [_read_action() for _ in range(states_ns.shape[0])]
+
+    return _read_actions
