@@ -28,7 +28,7 @@ Installing OpenAI baselines
     env MPICC=/usr/local/Cellar/mpich/3.2_3/bin/mpicc pip install mpi4py
     # (if that fails, use 'sudo find / -name mpicc' to find where MPICC is located + substitute accordingly)
 
-Train PPO agent
+Train PPO agent, with multiple CPUs generating rollouts. Note that if you have a
+GPU it will be split up, which is OK since PPO doesn't fully use the GPU anyway.
 
-    cd src
-    python run_atari_ppo.py [--max_timesteps=1]
+    mpirun -np 10 python src/run_atari_ppo.py --logdir log
