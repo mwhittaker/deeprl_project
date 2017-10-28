@@ -19,13 +19,14 @@ def _wrap_deepmind_ram(env):
     env = ClipRewardEnv(env)
     return env
 
-def wrap_train(env):
-    """Helper function."""
+def _wrap_deepmind(env, frame_stack=False):
+    """Analogous to _wrap_deepmind_ram, but for the original Atari env."""
     env = wrap_deepmind(env, clip_rewards=True)
-    env = FrameStack(env, 4)
+    if frame_stack:
+        env = FrameStack(env, 4)
     return env
 
-def gen_pong_env(seed):
+def gen_pong_env(seed, frame_stack=False):
     """Generate a pong environment, with all the bells and whistles."""
     benchmark = gym.benchmark_spec('Atari40M')
     task = benchmark.tasks[3]
@@ -35,7 +36,7 @@ def gen_pong_env(seed):
     env.seed(seed)
 
     # Can wrap in gym.wrappers.Monitor here if we want to record.
-    env = wrap_deepmind(env)
+    env = _wrap_deepmind(env, frame_stack)
     return env
 
 def gen_vectorized_pong_env(n):
@@ -48,6 +49,7 @@ def gen_vectorized_pong_env(n):
     task = benchmark.tasks[3]
 
     env_id = task.env_id
+    # TODO: wrap_deepmind -> _wrap_deepmind, see issue #21
     envs = [wrap_deepmind(gym.make(env_id)) for _ in range(n)]
     env = MultiprocessingEnv(envs)
 
@@ -60,5 +62,6 @@ def gen_pong_ram_env(seed):
     env = gym.make("Pong-ram-v0")
     env.seed(seed)
     # Can wrap in gym.wrappers.Monitor here if we want to record.
+    # TODO: frame_stack, see issue #21
     env = _wrap_deepmind_ram(env)
     return env
