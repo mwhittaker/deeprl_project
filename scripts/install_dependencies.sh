@@ -14,3 +14,5 @@ main() {
   pip install -e .
   cd ..
 }
+
+main
