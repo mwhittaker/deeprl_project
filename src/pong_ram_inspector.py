@@ -65,7 +65,7 @@ def main():
     tf.set_random_seed(args.seed)
     np.random.seed(args.seed)
     random.seed(args.seed)
-    env = atari_env.gen_pong_ram_env(args.seed)
+    env = atari_env.gen_pong_ram_env(args.seed, cherry_picked=False)
 
     # Generate the policy.
     if args.keyboard:

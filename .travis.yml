@@ -5,6 +5,4 @@ python:
 install:
   - bash scripts/install_dependencies.sh
 script:
-  - bash scripts/lint.sh
-  - bash scripts/run_all_environments.sh
-  - python src/run_atari_ppo.py --max_timesteps=1
+  - bash scripts/travis.sh
